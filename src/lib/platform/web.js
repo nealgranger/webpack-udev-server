@@ -16,7 +16,7 @@ import connect from 'http-middleware-metalab/adapter/http';
 
 import MemoryFileSystem from 'memory-fs';
 
-export default (compiler) => {
+export default (compiler, token) => {
   if (compiler.options.target !== 'web') {
     return;
   }
@@ -61,9 +61,7 @@ export default (compiler) => {
   server.on('listening', () => {
     const address = server.address();
     const path = compiler.options.output.publicPath;
-    ipc.emit('proxy', {
-      url: `http://localhost:${address.port}${path}`,
-    });
+    ipc.emit('proxy', {url: `http://localhost:${address.port}${path}`});
   });
 
   connect(app, server).listen();

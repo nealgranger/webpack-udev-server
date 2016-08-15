@@ -2,7 +2,7 @@ import http from 'http';
 import {fork} from 'child_process';
 import {join, basename} from 'path';
 import {watch} from 'chokidar';
-import io from 'socket.io';
+// import io from 'socket.io';
 import url from 'url';
 
 import compose from 'lodash/flowRight';
@@ -20,6 +20,9 @@ import header from 'http-middleware-metalab/middleware/header';
 import verbs from 'http-middleware-metalab/middleware/match/verbs';
 
 import {kill} from './util';
+import dispatcher from './dispatcher';
+
+import {RENDER_NS, COMPILER_NS, SOCKET_PATH} from './config';
 
 const xx = () => compose(
   verbs.get('/__webpack_udev', serve({
@@ -90,6 +93,8 @@ export default class Server extends http.Server {
         .on('change', (file) => this.load(file))
         .on('unlink', (file) => this.unload(file))
         .on('error', (err) => this.emit('error', err));
+
+      this.ouptut = this.fork(join(__dirname, 'render/default.js'), [], RENDER_NS);
     });
 
     this.on('close', () => {
@@ -103,80 +108,7 @@ export default class Server extends http.Server {
 
     // io.listen has to come after the normal app because of how it
     // overwrites the request handlers.
-    this.ipc = io.listen(this, {
-      // TODO: Don't dominate the / namespace!
-      // path: '____',
-    });
-
-    this.ipc.on('connection', (socket) => {
-      // Since we are essentially just a "smart proxy" we take requests to
-      // serve things at a particular URL and do so.
-      socket.on('proxy', (info) => {
-        // Add proxy to our internal list of proxies.
-        this.proxy({
-          url: info.url,
-          socket: socket.id,
-        });
-      });
-
-      // Take the resultant stats from child compilers and broadcast them
-      // to everyone else on the IPC network. This is useful for things
-      // which depend on having access to someone else stats object like a
-      // server knowing the client's stats.
-      socket.on('stats', (stats) => {
-        this.stats[socket.id] = stats;
-        this.ipc.in(`/compiler`).emit('stats', stats);
-        this.ipc.in(`/compiler/${stats.token}`).emit('stats', stats);
-        stats.assets.forEach((asset) => {
-          const path = join(stats.outputPath, asset.name);
-          this.ipc
-            .in(`/file${path}`)
-            .emit('stats', stats, path);
-        });
-      });
-
-      // Someone just died.
-      socket.on('disconnect', () => {
-        this.unproxy({
-          socket: socket.id,
-        });
-        // Delete all their stats.
-        const stats = this.stats[socket.id];
-        if (stats) {
-          this.ipc.in(`/compiler`).emit('rip', stats.token);
-          this.ipc.in(`/compiler/${stats.token}`).emit('rip', stats.token);
-        }
-        delete this.stats[socket.id];
-      });
-
-      socket.on('watch-stats', (token) => {
-        socket.join(token ? `/compiler/${token}` : '/compiler');
-        Object.keys(this.stats).forEach((key) => {
-          if (!token || this.stats[key].token === token) {
-            socket.emit('stats', this.stats[key]);
-          }
-        });
-      });
-
-      socket.on('unwatch-stats', (token) => {
-        socket.leave(token ? `/compiler/${token}` : '/compiler');
-      });
-
-      socket.on('watch-file', (file) => {
-        socket.join(`/file${file}`);
-        Object.keys(this.stats).forEach((key) => {
-          if (this.stats[key].assets.some(({name}) => {
-            return join(this.stats[key].outputPath, name) === file;
-          })) {
-            socket.emit('stats', this.stats[key], file);
-          }
-        });
-      });
-
-      socket.on('unwatch-file', (file) => {
-        socket.leave(`/file${file}`);
-      });
-    });
+    dispatcher(this);
 
     // Add custom proxies if desired.
     if (proxies) {
@@ -210,22 +142,27 @@ export default class Server extends http.Server {
     if (this.compilers[config]) {
       this.unload(config);
     }
-    const address = this.address();
     const exe = join(__dirname, 'compiler.js');
     console.log('🚀  Launching compiler for', basename(config));
-    const compiler = this.compilers[config] = fork(exe, [config], {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        IPC_URL: `http://localhost:${address.port}/`,
-      },
-    });
-    return compiler;
+    this.compilers[config] = this.fork(exe, [config], COMPILER_NS);
+    return this.compilers[config];
   }
 
   unload(config) {
     console.log('☠️  Killing compiler for', basename(config));
     kill(this.compilers[config]);
     delete this.compilers[config];
+  }
+
+  fork(exe, args, namespace = '') {
+    return fork(exe, args, {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        // IPC_URL: `http://localhost:${this.address().port}/${SOCKET_PATH}`,
+        IPC_URL: `http://localhost:${this.address().port}`,
+        IPC_SOCKET_NS: namespace,
+      },
+    });
   }
 }

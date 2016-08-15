@@ -10,17 +10,6 @@ import ipc from './ipc';
 import web from './platform/web';
 import node from './platform/node';
 
-const options = {
-  stats: {
-    hash: false,
-    cached: false,
-    cachedAssets: false,
-    colors: true,
-    modules: false,
-    chunks: false,
-  },
-};
-
 const token = Math.random().toString(36).substr(2);
 const argv = yargs
   .argv;
@@ -33,7 +22,7 @@ const base = {
 };
 
 const file = argv._[0];
-console.log(`⏳  Loading ${path.basename(file)}...`);
+ipc.emit('init', file);
 const config = {...base, ...load(file)};
 
 const isDirectory = (path) => {
@@ -52,12 +41,13 @@ if (!config.output.publicPath) {
 config.plugins.push(new webpack.DefinePlugin({
   __webpack_dev_token__: JSON.stringify(token), // eslint-disable-line
   'process.env.IPC_URL': JSON.stringify(process.env.IPC_URL),
+  'process.env.IPC_SOCKET_NS': JSON.stringify('client'),
 }));
 
 const compiler = webpack(config);
 
-web(compiler);
-node(compiler);
+web(compiler, token, file);
+node(compiler, token, file);
 
 // TODO: Figure out a better way of doing this.
 if (process.env.DUMP_WEBPACK) {
@@ -68,10 +58,10 @@ if (process.env.DUMP_WEBPACK) {
   }));
 }
 
-console.log(`🔨  Compiling ${path.basename(file)}...`);
-compiler.watch({ }, (err, stats) => {
-  if (err) {
-    console.error(err);
+ipc.emit('compiling', {});
+compiler.watch({ }, (error, stats) => {
+  if (error) {
+    ipc.emit('error', error);
     process.exit(231);
     return;
   }
@@ -80,6 +70,8 @@ compiler.watch({ }, (err, stats) => {
   data.token = token;
   data.outputPath = compiler.outputPath;
   ipc.emit('stats', data);
-
-  console.log(stats.toString(options.stats));
 });
+
+(new webpack.ProgressPlugin((progress, status) => {
+  ipc.emit('progress', {progress, status});
+})).apply(compiler);

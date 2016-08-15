@@ -24,3 +24,7 @@ io.emit('watch-stats');
 io.on('stats', (stats) => {
   store.dispatch(putStats(stats));
 });
+
+io.on('watching', (data) => {
+  console.log('watching', data);
+});
