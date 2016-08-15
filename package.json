@@ -14,7 +14,6 @@
     "webpack-udev-server": "bin/webpack-udev-server.js"
   },
   "dependencies": {
-    "babel-core": "^6.13.2",
     "backo": "^1.1.0",
     "chokidar": "^1.4.2",
     "http-middleware-metalab": "^0.3.1",
@@ -32,6 +31,7 @@
   },
   "devDependencies": {
     "babel-cli": "^6.4.5",
+    "babel-core": "^6.13.2",
     "babel-preset-metalab": "^0.2.0",
     "eslint": "^2.10.2",
     "eslint-config-metalab": "^4.0.1",
