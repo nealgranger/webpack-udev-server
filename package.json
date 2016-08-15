@@ -14,6 +14,7 @@
     "webpack-udev-server": "bin/webpack-udev-server.js"
   },
   "dependencies": {
+    "babel-core": "^6.13.2",
     "backo": "^1.1.0",
     "chokidar": "^1.4.2",
     "http-middleware-metalab": "^0.3.1",
