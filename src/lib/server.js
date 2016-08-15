@@ -101,6 +101,7 @@ export default class Server extends http.Server {
       // server knowing the client's stats.
       socket.on('stats', (stats) => {
         this.stats[socket.id] = stats;
+        this.ipc.in(`/compiler`).emit('stats', stats);
         this.ipc.in(`/compiler/${stats.token}`).emit('stats', stats);
         stats.assets.forEach((asset) => {
           const path = join(stats.outputPath, asset.name);
@@ -116,20 +117,25 @@ export default class Server extends http.Server {
           socket: socket.id,
         });
         // Delete all their stats.
+        const stats = this.stats[socket.id];
+        if (stats) {
+          this.ipc.in(`/compiler`).emit('rip', stats.token);
+          this.ipc.in(`/compiler/${stats.token}`).emit('rip', stats.token);
+        }
         delete this.stats[socket.id];
       });
 
       socket.on('watch-stats', (token) => {
-        socket.join(`/compiler/${token}`);
+        socket.join(token ? `/compiler/${token}` : '/compiler');
         Object.keys(this.stats).forEach((key) => {
-          if (this.stats[key].token === token) {
+          if (!token || this.stats[key].token === token) {
             socket.emit('stats', this.stats[key]);
           }
         });
       });
 
       socket.on('unwatch-stats', (token) => {
-        socket.leave(`/compiler/${token}`);
+        socket.leave(token ? `/compiler/${token}` : '/compiler');
       });
 
       socket.on('watch-file', (file) => {

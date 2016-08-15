@@ -1,0 +1,14 @@
+{
+  "name": "webpack-udev-server-ui",
+  "author": "Izaak Schroeder <izaak.schroeder@gmail.com>",
+  "dependencies": {
+    "lodash": "^4.1.0",
+    "react": "^15.3.0",
+    "react-redux": "^4.4.5",
+    "redux": "^3.5.2",
+    "socket.io-client": "^1.3.7",
+    "webpack": "^1.12.2",
+    "webpack-config-babel": "^0.2.0",
+    "webpack-partial": "^1.3.0"
+  }
+}

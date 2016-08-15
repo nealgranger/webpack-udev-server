@@ -27,11 +27,14 @@ const argv = yargs
 
 global.__IN_DEV_SERVER = true;
 
+const base = {
+  output: {},
+  plugins: [],
+};
+
 const file = argv._[0];
-const config = (() => {
-  console.log(`⏳  Loading ${path.basename(file)}...`);
-  return load(file);
-})();
+console.log(`⏳  Loading ${path.basename(file)}...`);
+const config = {...base, ...load(file)};
 
 const isDirectory = (path) => {
   return path.charAt(path.length - 1) === '/';
@@ -42,7 +45,7 @@ const isDirectory = (path) => {
 // /lib/JsonpMainTemplate.runtime.js#L27
 if (!config.output.publicPath) {
   config.output.publicPath = '/';
-} if (!isDirectory(config.output.publicPath)) {
+} else if (!isDirectory(config.output.publicPath)) {
   config.output.publicPath += '/';
 }
 
