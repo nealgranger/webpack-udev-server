@@ -15,8 +15,9 @@ const argv = yargs
     default: process.env.PORT || 0,
   })
   .option('ui', {
-    description: 'Include web interface',
+    description: 'Enable web interface',
     type: 'boolean',
+    default: true,
   })
   .help('help')
   .argv;
