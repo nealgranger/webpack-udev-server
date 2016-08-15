@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "./node_modules/.bin/babel -s -d . src",
-    "build:ui": "./ui/node_modules/.bin/webpack -p --config ui/webpack.config.babel.js",
+    "build:ui": "./node_modules/.bin/webpack -p --config ui/webpack.config.babel.js",
     "lint": "./node_modules/.bin/eslint .",
     "prepublish": "npm run build && npm run build:ui",
     "test": "npm run lint"
@@ -37,6 +37,7 @@
     "eslint-plugin-filenames": "^0.2.0",
     "eslint-plugin-import": "^1.13.0",
     "eslint-plugin-lodash-fp": "^1.2.0",
-    "eslint-plugin-react": "^5.1.1"
+    "eslint-plugin-react": "^5.1.1",
+    "webpack-udev-server-ui": "./ui"
   }
 }
