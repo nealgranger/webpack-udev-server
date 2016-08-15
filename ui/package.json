@@ -1,5 +1,6 @@
 {
   "name": "webpack-udev-server-ui",
+  "version": "0.1.0",
   "author": "Izaak Schroeder <izaak.schroeder@gmail.com>",
   "description": "Simple UI for monitoring the server.",
   "dependencies": {
