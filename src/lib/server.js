@@ -15,11 +15,35 @@ import connect from 'http-middleware-metalab/adapter/http';
 import match from 'http-middleware-metalab/middleware/match';
 import path from 'http-middleware-metalab/middleware/match/path';
 import thunk from 'http-middleware-metalab/middleware/thunk';
+import serve from 'http-middleware-metalab/middleware/serve';
+import header from 'http-middleware-metalab/middleware/header';
+import verbs from 'http-middleware-metalab/middleware/match/verbs';
 
 import {kill} from './util';
 
+const xx = () => compose(
+  verbs.get('/__webpack_udev', serve({
+    root: join(
+      __dirname,
+      '..',
+      'ui',
+      'dist'
+    ),
+  })),
+  compose(
+    status(302),
+    header('Location', '/__webpack_udev'),
+    send('Redirecting to UI.')
+  )
+);
+
+const yy = () => compose(
+  status(404),
+  send('webpack-udev-server ready.')
+);
+
 export default class Server extends http.Server {
-  constructor(configs, options = {}) {
+  constructor(configs, {proxies = [], ui = true} = {}) {
     super();
 
     const app = compose(
@@ -34,7 +58,7 @@ export default class Server extends http.Server {
         });
         return () => result;
       }),
-      compose(status(404), send('Hello.'))
+      ui ? xx() : yy()
     )({
       error(err) {
         // TODO: Once the error handling has been standardized, as per:
@@ -155,8 +179,8 @@ export default class Server extends http.Server {
     });
 
     // Add custom proxies if desired.
-    if (options.proxies) {
-      options.proxies.forEach((proxy) => this.proxy(proxy));
+    if (proxies) {
+      proxies.forEach((proxy) => this.proxy(proxy));
     }
   }
 

@@ -31,10 +31,9 @@ const proxies = (
 
 const configs = [...argv._];
 
-// TODO: Right now this is just a "live" or self-hosted version of the UI. This
-// should actually be compiled, hosted on its on mini-server and then proxied
-// to just like any other app.
-if (argv.ui) {
+// This is a "live" or self-hosted version of the UI. Normally you don't want
+// this unless you are hacking on the UI itself.
+if (argv.ui && process.env.WEBPACK_DEV_UI) {
   configs.push(path.join(
     __dirname,
     '..',
@@ -45,6 +44,7 @@ if (argv.ui) {
 
 const server = createServer(configs, {
   proxies: proxies,
+  ui: argv.ui && !process.env.WEBPACK_DEV_UI,
 });
 
 /* eslint no-console: 0 */

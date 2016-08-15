@@ -4,8 +4,10 @@
   "author": "Izaak Schroeder <izaak.schroeder@gmail.com>",
   "main": "index.js",
   "scripts": {
+    "build": "./node_modules/.bin/babel -s -d . src",
+    "build:ui": "./node_modules/.bin/webpack -p --config ui/webpack.config.babel.js",
     "lint": "./node_modules/.bin/eslint .",
-    "prepublish": "./node_modules/.bin/babel -s -d . src",
+    "prepublish": "npm run build && npm run build:ui",
     "test": "npm run lint"
   },
   "bin": {
